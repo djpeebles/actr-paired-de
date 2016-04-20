@@ -1,0 +1,48 @@
+# ==============================================
+#
+#
+# ==============================================
+# Initiated: Sat Jan 30 08:59:13 2016
+# ==============================================
+
+#+LATEX_CLASS: article
+#+LaTeX_CLASS_OPTIONS: [a4paper,11pt]
+#+OPTIONS: TeX:t LaTeX:t ':t skip:nil ^:nil d:nil todo:t pri:nil tags:not-in-toc
+#+OPTIONS: toc:nil H:5 num:0
+
+#+LaTeX_HEADER: \usepackage[margin=1in]{geometry}
+#+LATEX_HEADER: \usepackage{verbatim}
+#+LaTeX_HEADER: \usepackage[british]{babel}
+#+LaTeX_HEADER: \usepackage{csquotes}
+#+LaTeX_HEADER: \usepackage[style=numeric,language=british,backend=biber]{biblatex}
+#+LaTeX_HEADER: \DeclareLanguageMapping{british}{british-apa}
+#+LaTeX_HEADER: \addbibresource{actr-paired-de.bib}
+#+LaTeX_HEADER: \usepackage{color}
+#+LaTeX_HEADER: \usepackage[usenames,dvipsnames,svgnames,table]{xcolor}
+#+LaTeX_HEADER: \usepackage{hyperref}
+#+LaTeX_HEADER: \usepackage[T1]{fontenc}
+#+LaTeX_HEADER: \usepackage[ttscale=.875]{libertine}
+#+LaTeX_HEADER: \usepackage[libertine]{newtxmath}
+#+LaTeX_HEADER: \hypersetup{colorlinks=true,urlcolor=BrickRed,citecolor=Maroon}
+
+#+LaTeX_HEADER: \lstset{basicstyle=\small,language=Lisp}
+
+#+LaTeX_HEADER: \usepackage{sectsty}
+#+LaTeX_HEADER: \sectionfont{\normalfont\scshape}
+#+LaTeX_HEADER: \subsectionfont{\normalfont\itshape}
+
+#+TITLE: Optimising ACT-R models using differential evolution
+#+AUTHOR: David Peebles
+#+DATE: \today
+
+* Introduction
+This repository currently only contains one file: /diff-evol.lisp/
+which contains the original differential evolution algorithm described
+in \parencite{sto&pri:1997}.  My original lisp code has recently been
+improved beyond recognition by Dan Bothell and instructions for its
+use are contained in the file itself.
+
+A more detailed description of the code and its use will be provided
+in this file shortly.
+
+\printbibliography

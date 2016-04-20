@@ -1,0 +1,6 @@
+*.fasl
+*.bbl
+*.blg
+*.xml
+*.tex
+*.bcf
