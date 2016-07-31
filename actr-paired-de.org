@@ -5,15 +5,18 @@
 # Initiated: Sat Jan 30 08:59:13 2016
 # ==============================================
 
+#+STARTUP: showall
 #+LATEX_CLASS: article
 #+LaTeX_CLASS_OPTIONS: [a4paper,11pt]
 #+OPTIONS: TeX:t LaTeX:t ':t skip:nil ^:nil d:nil todo:t pri:nil tags:not-in-toc
 #+OPTIONS: toc:nil H:5 num:0
 
-#+LaTeX_HEADER: \usepackage[margin=1in]{geometry}
+#+LaTeX_HEADER: \usepackage{geometry}
+#+LaTeX_HEADER: \geometry{left=2.5cm, top=2cm, right=2.5cm, bottom=2cm}
 #+LATEX_HEADER: \usepackage{verbatim}
 #+LaTeX_HEADER: \usepackage[british]{babel}
 #+LaTeX_HEADER: \usepackage{csquotes}
+#+LaTeX_HEADER: \graphicspath{{./}{figures/}}
 #+LaTeX_HEADER: \usepackage[style=numeric,language=british,backend=biber]{biblatex}
 #+LaTeX_HEADER: \DeclareLanguageMapping{british}{british-apa}
 #+LaTeX_HEADER: \addbibresource{actr-paired-de.bib}
@@ -23,9 +26,21 @@
 #+LaTeX_HEADER: \usepackage[T1]{fontenc}
 #+LaTeX_HEADER: \usepackage[ttscale=.875]{libertine}
 #+LaTeX_HEADER: \usepackage[libertine]{newtxmath}
-#+LaTeX_HEADER: \hypersetup{colorlinks=true,urlcolor=BrickRed,citecolor=Maroon}
 
-#+LaTeX_HEADER: \lstset{basicstyle=\small,language=Lisp}
+#+LaTeX_HEADER: \hypersetup{colorlinks=true,
+#+LaTeX_HEADER: urlcolor=BrickRed,
+#+LaTeX_HEADER: citecolor=Maroon,
+#+LaTeX_HEADER: pdfauthor={David Peebles},
+#+LaTeX_HEADER: pdftitle={Optimising ACT-R models using differential evolution},
+#+LaTeX_HEADER: pdfsubject={Optimising ACT-R models},
+#+LaTeX_HEADER: pdfkeywords={ACT-R, Differential Evolution},
+#+LaTeX_HEADER: pdflang={English}}
+
+#+LaTeX_HEADER: \lstset{ %
+#+LaTeX_HEADER: frame=lines, basicstyle=\footnotesize\ttfamily,
+#+LaTeX_HEADER: breaklines=true, language=Lisp, stringstyle=\color{PineGreen},
+#+LaTeX_HEADER: showstringspaces=false, commentstyle=\color{Mahogany},
+#+LaTeX_HEADER: numbers=left, numbersep=5pt, numberstyle=\scriptsize\color{MidnightBlue}}
 
 #+LaTeX_HEADER: \usepackage{sectsty}
 #+LaTeX_HEADER: \sectionfont{\normalfont\scshape}
@@ -36,13 +51,153 @@
 #+DATE: \today
 
 * Introduction
-This repository currently only contains one file: /diff-evol.lisp/
-which contains the original differential evolution algorithm described
-in \parencite{sto&pri:1997}.  My original lisp code has recently been
-improved beyond recognition by Dan Bothell and instructions for its
-use are contained in the file itself.
+The key file in this repository is /diff-evol.lisp/ which contains
+lisp code implementing the original differential evolution (DE)
+algorithm described in \parencite{sto&pri:1997} for optimising
+parameters of ACT-R cognitive models.  A brief introduction to the DE
+algorithm is available in \parencite{pee:2016} (available in this
+repository).
 
-A more detailed description of the code and its use will be provided
-in this file shortly.
+In order to use the code for your ACT-R model you must:
+
++ Ensure that the output of your model is a measure of fit of the
+  model to data (e.g., the value returned from ACT-R's /correlation/
+  function).
+
++ Define a function to run the model that suppresses any output to
+  standard output and any warnings that may be generated due to poor
+  parameter choices (see examples below).
+
++ Provide the values for the four DE algorithm parameters (reasonable
+  values for each of these parameters are discussed in
+  \parencite{pee:2016}).  These are defined in the file with the
+  following default values:
+
+#+begin_src lisp -n :exports code
+(defparameter *ngen* 10 "Number of generations")
+(defparameter *NP* 25 "Population size")
+(defparameter *F* 0.5 "Weighted difference computation scale factor")
+(defparameter *CR* 0.5 "Recombination computation crossover constant")
+#+end_src
+
+* Running the DE function
+To use this code you should load the elements in the following order:
+
+1. load-act-r.lisp
+
+2. diff-evol.lisp
+
+3. Your ACT-R model code
+
+** The optim function
+
+\noindent The main function to call is (optim) which requires two
+parameters:
+
++ A function (which must take no parameters) that will be
+  called to generate a result for a trial.
+
++ A list of parameter specifications.  Each parameter specification
+  must be a list of three items:
+    - The first is an indicator for the parameter which will be
+      provided to the parameter assignment function.
+    - The second must be a real value that indicates the minimum value
+      that parameter can have.
+    - The third must be a real value that indicates the maximum value
+      that parameter can have.
+
+In addition, there are several keyword parameters which may be
+provided.
+
+| Keyword                  | Description                                                          |
+|--------------------------+----------------------------------------------------------------------|
+| :ngen                    | Number of generations to run (default = \ast{}ngen\ast{}).           |
+| :np                      | The size of each generation (default = \ast{}NP\ast{}).              |
+| :f                       | Difference calculation scale factor.  Must be a real value in the    |
+|                          | range 0 < f <= 1.2 (default = \ast{}F\ast{}).                        |
+| :cr                      | The crossover rate.  Must be a real value in the range               |
+|                          | 0 <= cr <= 1 (default = \ast{}CR\ast{}).                             |
+| :assign-model-parameters | Must be a function which accepts one parameter.  That function       |
+|                          | will be passed a list of lists prior to calling the result function. |
+|                          | Each sublist will have two elements: 1. the first value will be      |
+|                          | a parameter indicator (as given in the parameter specification),     |
+|                          | 2. the second value will be the current value for that parameter     |
+|                          | in the vector for which a result is desired.  If ACT-R is also       |
+|                          | loaded then it will have a default value of a function that          |
+|                          | will set ACT-R general parameters for a model after it is reset.     |
+|                          | Otherwise, a function must be specified.                             |
+| :direction               | Either the keyword :min or :max indicating how to find               |
+|                          | the best result in a generation.  The default is :max.               |
+| :output                  | An indicator for a stream to which all of the output will be         |
+|                          | written.  The default is t, which outputs to *standard-              |
+|                          | output*.  A value of nil will suppress the output.                   |
+
+
+** Example 1.  The /Paired Associate/ model
+The first example below is the /paired associate/ model from unit 4 of
+the ACT-R tutorial.  First load the fan effect model from unit 4 of
+the ACT-R tutorial.  Then change the output function used in the code
+for the experiment to just return the correlation.  Write a function
+to run the task suppressing the model output and any warnings which
+may result from poor parameter choices.  Finally specify the three
+parameters to adjust in the model with their ranges and use the
+default DE configuration
+
+#+begin_src lisp -n :exports code
+(actr-load "ACT-R:tutorial;unit4;paired.lisp")
+
+(defun output-data (data n)
+  (let ((probability (mapcar (lambda (x) (/ (first x) n)) data))
+        (latency (mapcar (lambda (x) (/ (or (second x) 0) n)) data)))
+    ;; (correlation latency *paired-latencies*)
+    (correlation probability *paired-probability*)))
+
+(defun run-paired-with-no-output ()
+  (let ((*standard-output* (make-string-output-stream)))
+    (suppress-warnings (paired-experiment 100))))
+
+(optim 'run-paired-with-no-output '((:rt -5.0 -0.01) (:lf 0.1 1.5) (:ans 0.1 0.8)))
+#+end_src
+
+** Example 2. The /Fan Effect/ model
+The second example is the /fan effect/ model from unit 5 of the ACT-R
+tutorial.  First load the fan effect model.  Then change the output
+function used in the code for the experiment to just return the
+correlation.  Write a function to run the task suppressing the model
+output and any warnings which may result from poor parameter choices.
+Finally specify the two parameters to adjust in the model with their
+ranges and use the default DE configuration
+\pagebreak
+#+begin_src lisp -n :exports code
+(actr-load "ACT-R:tutorial;unit5;fan.lisp")
+
+(defun output-person-location (data)
+  (let ((rts (mapcar 'first data)))
+    (correlation rts *person-location-data*)))
+
+(defun run-fan-with-no-output ()
+  (let ((*standard-output* (make-string-output-stream)))
+    (suppress-warnings (fan-experiment))))
+
+(optim 'run-fan-with-no-output '((:mas 1.4 3.0) (:lf 0.1 1.5)))
+#+end_src
+\vspace{.3cm}
+
+\noindent Now change the output function to return the mean deviation
+and see what we get when minimizing that
+#+begin_src lisp -n :exports code
+(defun output-person-location (data)
+  (let ((rts (mapcar 'first data)))
+    (mean-deviation rts *person-location-data*)))
+
+(optim 'run-fan-with-no-output '((:mas 1.4 3.0) (:lf 0.1 1.5)) :direction :min :output nil)
+#+end_src
+
+* Acknowledgements
+
+As with every other of my ACT-R related projects, this work has
+benefited enormously from the advice and support of Dan Bothell at
+CMU.  For this project, my original lisp code has been improved beyond
+recognition by Dan.
 
 \printbibliography
